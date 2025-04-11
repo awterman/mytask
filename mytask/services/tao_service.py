@@ -25,7 +25,7 @@ class TaoService:
         await self.subtensor.initialize()
         await self.substrate.initialize()
 
-    async def get_dividends(self, netuids: list[int] | None) -> list[Dividend]:
+    async def get_dividends(self, netuids: list[int] | None, hotkey: str | None) -> list[Dividend]:
         block_hash = await self.substrate.get_chain_head()
 
         if netuids is None:
@@ -33,11 +33,15 @@ class TaoService:
 
         semaphore = asyncio.Semaphore(4)  # Limit concurrent tasks to 4
         async def query_dividends(netuid: int):
+            params: list = [netuid]
+            if hotkey is not None:
+                params.append(hotkey)
+
             async with semaphore:
                 return await self.substrate.query_map(
                     "SubtensorModule",
                     "TaoDividendsPerSubnet",
-                    [netuid],
+                    params,
                     block_hash=block_hash
                 )
 
