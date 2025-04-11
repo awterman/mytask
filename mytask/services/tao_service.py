@@ -1,37 +1,65 @@
-from bittensor import AsyncSubtensor, wallet
+import asyncio
 
+from bittensor import AsyncSubtensor, Balance
+from bittensor.core.async_subtensor import AsyncSubstrateInterface
+from bittensor.core.chain_data import decode_account_id
+from bittensor.core.settings import SS58_FORMAT
+from bittensor_wallet import Wallet
+from pydantic import BaseModel
+
+
+class Dividend(BaseModel):
+    netuid: int
+    hotkey: str
+    dividends: int
 
 class TaoService:
-    def __init__(self, subtensor: AsyncSubtensor, wallet: wallet, netuid: int = 18):
-        self.netuid = netuid
-        self.subtensor = subtensor
+    def __init__(self, wallet: Wallet):
         self.wallet = wallet
 
-    async def get_dividends(self, hotkey: str):
-        return await self.subtensor.get_tao_for_subnet(
-            netuid=self.netuid, hotkey=hotkey
-        )
+        # TODO: make this configurable
+        self.subtensor = AsyncSubtensor(network="test")
+        self.substrate = AsyncSubstrateInterface("wss://entrypoint-finney.opentensor.ai:443", ss58_format=SS58_FORMAT)
 
-    async def get_stake(self, hotkey: str):
-        return await self.subtensor.get_stake_for_hotkey(
-            netuid=self.netuid, hotkey=hotkey
-        )
+    async def initialize(self):
+        await self.subtensor.initialize()
+        await self.substrate.initialize()
 
-    async def get_balance(self):
-        return await self.subtensor.get_balance(self.wallet.hotkey.ss58_address)
+    async def get_dividends(self, netuids: list[int] | None) -> list[Dividend]:
+        block_hash = await self.substrate.get_chain_head()
 
-    async def stake(self, amount: float):
+        if netuids is None:
+            netuids = await self.subtensor.get_subnets(block_hash=block_hash)
+
+        semaphore = asyncio.Semaphore(4)  # Limit concurrent tasks to 4
+        async def query_dividends(netuid: int):
+            async with semaphore:
+                return await self.substrate.query_map(
+                    "SubtensorModule",
+                    "TaoDividendsPerSubnet",
+                    [netuid],
+                    block_hash=block_hash
+                )
+
+        tasks = [query_dividends(netuid) for netuid in netuids]
+        results = await asyncio.gather(*tasks)
+
+        dividends = []
+        for netuid, result in zip(netuids, results):
+            async for k, v in result: # type: ignore
+                dividends.append(Dividend(netuid=netuid, hotkey=decode_account_id(k), dividends=v.value))
+        return dividends
+
+    async def stake(self, netuid: int, amount: Balance):
         return await self.subtensor.add_stake(
             wallet=self.wallet,
-            netuid=self.netuid,
-            hotkey=self.wallet.hotkey.ss58_address,
+            netuid=netuid,
             amount=amount,
         )
 
-    async def unstake(self, amount: float):
+    async def unstake(self, netuid: int, amount: Balance):
         return await self.subtensor.unstake(
             wallet=self.wallet,
-            netuid=self.netuid,
-            hotkey=self.wallet.hotkey.ss58_address,
+            netuid=netuid,
             amount=amount,
         )
