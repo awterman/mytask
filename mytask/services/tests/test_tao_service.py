@@ -28,7 +28,7 @@ async def test_get_dividends_specific_netuid():
     service = TaoService()
     await service.initialize()
     
-    dividends = await service.get_dividends(netuids=[TEST_NETUID], hotkey=None)
+    dividends = await service.get_dividends(netuid=TEST_NETUID, hotkey=None)
     assert isinstance(dividends, list)
     assert all(d.netuid == TEST_NETUID for d in dividends)
 
@@ -36,7 +36,7 @@ async def test_get_dividends_with_hotkey():
     service = TaoService()
     await service.initialize()
     
-    dividends = await service.get_dividends(netuids=[TEST_NETUID], hotkey=TEST_HOTKEY)
+    dividends = await service.get_dividends(netuid=TEST_NETUID, hotkey=TEST_HOTKEY)
     assert isinstance(dividends, list)
     assert all(d.hotkey == TEST_HOTKEY for d in dividends)
 

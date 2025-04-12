@@ -1,5 +1,6 @@
 import asyncio
 
+from aiocache import RedisCache, cached
 from bittensor import AsyncSubtensor, Balance
 from bittensor.core.async_subtensor import AsyncSubstrateInterface
 from bittensor.core.chain_data import decode_account_id
@@ -14,7 +15,8 @@ class Dividend(BaseModel):
     dividends: int
 
 class TaoService:
-    def __init__(self, wallet: Wallet | None = None):
+    def __init__(self, cache: RedisCache, wallet: Wallet | None = None):
+        self.cache = cache
         self.wallet = wallet or Wallet()
 
         # TODO: make this configurable
@@ -25,10 +27,38 @@ class TaoService:
         await self.subtensor.initialize()
         await self.substrate.initialize()
 
-    async def get_dividends(self, netuids: list[int] | None, hotkey: str | None) -> list[Dividend]:
+    def _make_cache_key(self, netuid: int | None, hotkey: str | None) -> str:
+        # both none
+        if netuid is None and hotkey is None:
+            return "all"
+        # netuids none
+        if netuid is None:
+            return f"hotkey:{hotkey}"
+        # hotkey none
+        if hotkey is None:
+            return f"netuid:{netuid}"
+        # both not none
+        return f"netuid:{netuid},hotkey:{hotkey}"
+
+    async def _get_cached_all_netuids(self) -> list[int]:
+        @cached(ttl=60*2, key="all_netuids", cache=self.cache) # type: ignore
+        async def _inner() -> list[int]:
+            return await self.subtensor.get_subnets()
+        return await _inner()
+
+    async def get_cached_dividends(self, netuid: int | None, hotkey: str | None) -> list[Dividend]:
+        @cached(ttl=60*2, key_builder=lambda func, args, kwargs: _make_cache_key(kwargs["netuid"], kwargs["hotkey"]), cache=self.cache) # type: ignore
+        async def _inner() -> list[Dividend]:
+            # TODO: refresh all available cache keys
+            return await self.get_dividends(netuid, hotkey)
+        return await _inner()
+
+    async def get_dividends(self, netuid: int | None, hotkey: str | None) -> list[Dividend]:
         # FIXME: hotkey param is not working
-        if netuids is None:
-            netuids = await self.subtensor.get_subnets()
+        if netuid is None:
+            netuids = await self._get_cached_all_netuids()
+        else:
+            netuids = [netuid]
 
         semaphore = asyncio.Semaphore(50)  # Limit concurrent tasks to 4
         async def query_dividends(netuid: int):
