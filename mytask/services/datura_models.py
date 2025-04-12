@@ -10,9 +10,9 @@ class TwitterUser(BaseModel):
     url: HttpUrl
     name: str
     username: str
-    created_at: str
     followers_count: int
     profile_image_url: Optional[HttpUrl] = None
+    created_at: Optional[str] = None  # Make created_at optional
 
 
 class Media(BaseModel):
@@ -37,6 +37,11 @@ class Tweet(BaseModel):
     def engagement(self) -> int:
         """Calculate total engagement (likes + retweets)"""
         return self.like_count + self.retweet_count
+    
+    model_config = {
+        "populate_by_name": True,
+        "extra": "ignore"  # Ignore extra fields in input data
+    }
 
 
 class SubnetSentimentAnalysis(BaseModel):

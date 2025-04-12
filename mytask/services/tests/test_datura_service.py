@@ -136,7 +136,7 @@ async def test_search_twitter_error(datura_service):
 async def test_analyze_subnet_sentiment(datura_service):
     """Test the analyze_subnet_sentiment method with mocked search_twitter response"""
     # Mock the search_twitter to return Tweet objects
-    tweet_objects = [Tweet.parse_obj(tweet) for tweet in MOCK_TWEET_DATA]
+    tweet_objects = [Tweet.model_validate(tweet) for tweet in MOCK_TWEET_DATA]
     
     with patch.object(datura_service, "search_twitter", return_value=tweet_objects):
         result = await datura_service.analyze_subnet_sentiment(netuid=TEST_NETUID)

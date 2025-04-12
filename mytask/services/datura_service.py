@@ -103,7 +103,7 @@ class DaturaService:
                     raise Exception(f"Datura API error: {response.status} - {error_text}")
                 
                 data = await response.json()
-                return [Tweet.parse_obj(tweet) for tweet in data]
+                return [Tweet.model_validate(tweet) for tweet in data]
     
     async def analyze_subnet_sentiment(self, 
                                  netuid: int,
