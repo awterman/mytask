@@ -12,6 +12,8 @@ class MyTaskSettings(BaseSettings):
     datura_api_key: str
     chutes_api_key: str
 
+    auth_token: str
+
     model_config = SettingsConfigDict(env_file=".env")
 
 
