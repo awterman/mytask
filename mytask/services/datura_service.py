@@ -100,3 +100,83 @@ class DaturaService:
                     raise Exception(f"Datura API error: {response.status} - {error_text}")
                 
                 return await response.json()
+    
+    async def analyze_subnet_sentiment(self, 
+                                 netuid: int,
+                                 days_back: int = 7,
+                                 tweet_count: int = 50,
+                                 min_engagement: int = 0) -> Dict[str, Any]:
+        """
+        Search for tweets related to a specific Bittensor subnet and analyze sentiment.
+        
+        Args:
+            netuid: The netuid of the Bittensor subnet to analyze
+            days_back: Number of days to look back for tweets (default: 7)
+            tweet_count: Number of tweets to retrieve (default: 50)
+            min_engagement: Minimum engagement (likes + retweets) for tweets (default: 0)
+            
+        Returns:
+            A dictionary containing sentiment analysis results and collected tweets
+        """
+        from datetime import datetime, timedelta
+
+        # Calculate date range for search (last N days)
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        start_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+        
+        # Construct search query for the specific subnet
+        query = f"Bittensor netuid {netuid}"
+        
+        # Search tweets
+        tweets = await self.search_twitter(
+            query=query,
+            sort="Latest",  # Get most recent tweets
+            start_date=start_date,
+            end_date=end_date,
+            lang="en",
+            min_likes=min_engagement,
+            min_retweets=min_engagement,
+            count=tweet_count
+        )
+        
+        # Basic sentiment analysis
+        if not tweets:
+            return {
+                "netuid": netuid,
+                "tweet_count": 0,
+                "sentiment": "neutral",
+                "sentiment_score": 0,
+                "engagement": 0,
+                "tweets": []
+            }
+        
+        # Process tweets to extract basic sentiment indicators
+        total_engagement = 0
+        tweet_data = []
+        
+        for tweet in tweets:
+            # Calculate engagement metrics
+            engagement = tweet.get("like_count", 0) + tweet.get("retweet_count", 0)
+            total_engagement += engagement
+            
+            # Store processed tweet data
+            tweet_data.append({
+                "id": tweet.get("id"),
+                "text": tweet.get("text"),
+                "created_at": tweet.get("created_at"),
+                "url": tweet.get("url"),
+                "username": tweet.get("user", {}).get("username"),
+                "engagement": engagement
+            })
+        
+        # TODO: For more accurate sentiment analysis, you might want to integrate
+        # with a dedicated NLP service or model to analyze the tweet texts
+        
+        return {
+            "netuid": netuid,
+            "tweet_count": len(tweets),
+            "date_range": f"{start_date} to {end_date}",
+            "total_engagement": total_engagement,
+            "average_engagement": total_engagement / len(tweets) if tweets else 0,
+            "tweets": tweet_data
+        }
