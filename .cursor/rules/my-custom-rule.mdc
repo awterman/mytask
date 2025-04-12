@@ -5,3 +5,4 @@ alwaysApply: true
 ---
 - The project use uv as the package manager.
 - Always use async functions if possible.
+- Always define Pydantic models instead of using raw dict if possible.
