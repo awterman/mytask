@@ -1,7 +1,10 @@
 import os
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
+
+from mytask.services.datura_models import SubnetSentimentAnalysis, Tweet
 
 
 class DaturaService:
@@ -37,7 +40,7 @@ class DaturaService:
                        min_retweets: Optional[int] = 0,
                        min_replies: Optional[int] = 0,
                        min_likes: Optional[int] = 0,
-                       count: Optional[int] = 10) -> List[Dict[str, Any]]:
+                       count: Optional[int] = 10) -> List[Tweet]:
         """
         Search for tweets using Datura AI's Twitter search API.
         
@@ -58,7 +61,7 @@ class DaturaService:
             count: Number of tweets to retrieve
             
         Returns:
-            List of tweet objects matching the search criteria
+            List of Tweet objects matching the search criteria
         """
         url = f"{self.base_url}/twitter"
         
@@ -99,13 +102,14 @@ class DaturaService:
                     error_text = await response.text()
                     raise Exception(f"Datura API error: {response.status} - {error_text}")
                 
-                return await response.json()
+                data = await response.json()
+                return [Tweet.parse_obj(tweet) for tweet in data]
     
     async def analyze_subnet_sentiment(self, 
                                  netuid: int,
                                  days_back: int = 7,
                                  tweet_count: int = 50,
-                                 min_engagement: int = 0) -> Dict[str, Any]:
+                                 min_engagement: int = 0) -> SubnetSentimentAnalysis:
         """
         Search for tweets related to a specific Bittensor subnet and analyze sentiment.
         
@@ -116,10 +120,8 @@ class DaturaService:
             min_engagement: Minimum engagement (likes + retweets) for tweets (default: 0)
             
         Returns:
-            A dictionary containing sentiment analysis results and collected tweets
+            A SubnetSentimentAnalysis object containing analysis results
         """
-        from datetime import datetime, timedelta
-
         # Calculate date range for search (last N days)
         end_date = datetime.now().strftime("%Y-%m-%d")
         start_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
@@ -141,42 +143,39 @@ class DaturaService:
         
         # Basic sentiment analysis
         if not tweets:
-            return {
-                "netuid": netuid,
-                "tweet_count": 0,
-                "sentiment": "neutral",
-                "sentiment_score": 0,
-                "engagement": 0,
-                "tweets": []
-            }
+            return SubnetSentimentAnalysis(
+                netuid=netuid,
+                tweet_count=0,
+                sentiment="neutral",
+                sentiment_score=0,
+                tweets=[]
+            )
         
-        # Process tweets to extract basic sentiment indicators
-        total_engagement = 0
+        # Process tweets to extract data
+        total_engagement = sum(tweet.engagement for tweet in tweets)
+        average_engagement = total_engagement / len(tweets) if tweets else 0
+        
+        # Convert tweets to dictionaries for the response
         tweet_data = []
-        
         for tweet in tweets:
-            # Calculate engagement metrics
-            engagement = tweet.get("like_count", 0) + tweet.get("retweet_count", 0)
-            total_engagement += engagement
-            
-            # Store processed tweet data
-            tweet_data.append({
-                "id": tweet.get("id"),
-                "text": tweet.get("text"),
-                "created_at": tweet.get("created_at"),
-                "url": tweet.get("url"),
-                "username": tweet.get("user", {}).get("username"),
-                "engagement": engagement
-            })
+            tweet_dict = {
+                "id": tweet.id,
+                "text": tweet.text,
+                "created_at": tweet.created_at,
+                "url": str(tweet.url),
+                "username": tweet.user.username,
+                "engagement": tweet.engagement
+            }
+            tweet_data.append(tweet_dict)
         
         # TODO: For more accurate sentiment analysis, you might want to integrate
         # with a dedicated NLP service or model to analyze the tweet texts
         
-        return {
-            "netuid": netuid,
-            "tweet_count": len(tweets),
-            "date_range": f"{start_date} to {end_date}",
-            "total_engagement": total_engagement,
-            "average_engagement": total_engagement / len(tweets) if tweets else 0,
-            "tweets": tweet_data
-        }
+        return SubnetSentimentAnalysis(
+            netuid=netuid,
+            tweet_count=len(tweets),
+            date_range=f"{start_date} to {end_date}",
+            total_engagement=total_engagement,
+            average_engagement=average_engagement,
+            tweets=tweet_data
+        )
