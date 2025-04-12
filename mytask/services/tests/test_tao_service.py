@@ -19,7 +19,7 @@ async def test_initialize():
 async def test_get_dividends_all_netuids():
     service = TaoService(redis_cache)
     await service.initialize()
-    dividends = await service.get_cached_dividends(netuid=None, hotkey=None)
+    dividends, is_cached = await service.get_cached_dividends(netuid=None, hotkey=None)
     
     assert isinstance(dividends, list)
     assert all(isinstance(d, Dividend) for d in dividends)
@@ -31,7 +31,7 @@ async def test_get_dividends_specific_netuid():
     service = TaoService(redis_cache)
     await service.initialize()
     
-    dividends = await service.get_cached_dividends(netuid=TEST_NETUID, hotkey=None)
+    dividends, is_cached = await service.get_cached_dividends(netuid=TEST_NETUID, hotkey=None)
     assert isinstance(dividends, list)
     assert all(d.netuid == TEST_NETUID for d in dividends)
 
@@ -39,7 +39,7 @@ async def test_get_dividends_with_hotkey():
     service = TaoService(redis_cache)
     await service.initialize()
     
-    dividends = await service.get_cached_dividends(netuid=TEST_NETUID, hotkey=TEST_HOTKEY)
+    dividends, is_cached = await service.get_cached_dividends(netuid=TEST_NETUID, hotkey=TEST_HOTKEY)
     assert isinstance(dividends, list)
     assert all(d.hotkey == TEST_HOTKEY for d in dividends)
 

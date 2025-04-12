@@ -9,7 +9,7 @@
 from pydantic import BaseModel
 from sqlalchemy import Boolean, Column, Integer, String
 
-from mytask.common.base import MyTaskBaseDAO, MyTaskBaseDTO, MyTaskBaseModel
+from mytask.common.base import MyTaskBaseDAO, MyTaskBaseModel
 
 
 class TaoDividendModel(MyTaskBaseModel):
@@ -34,5 +34,5 @@ class TaoDividendDAO(TaoDividendBase, MyTaskBaseDAO):
     pass
 
 
-class TaoDividendDTO(TaoDividendBase, MyTaskBaseDTO):
-    pass
+class GetTaoDividendsResponse(BaseModel):
+    dividends: list[TaoDividendBase]

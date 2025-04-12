@@ -1,4 +1,5 @@
 import asyncio
+from functools import lru_cache
 
 from aiocache import RedisCache, cached
 from bittensor import AsyncSubtensor, Balance
@@ -7,6 +8,8 @@ from bittensor.core.chain_data import decode_account_id
 from bittensor.core.settings import SS58_FORMAT
 from bittensor_wallet import Wallet
 from pydantic import BaseModel
+
+from mytask.services.redis_cache import get_redis_cache
 
 
 class Dividend(BaseModel):
@@ -46,12 +49,19 @@ class TaoService:
             return await self.subtensor.get_subnets()
         return await _inner()
 
-    async def get_cached_dividends(self, netuid: int | None, hotkey: str | None) -> list[Dividend]:
-        @cached(ttl=60*2, key_builder=lambda func, args, kwargs: _make_cache_key(kwargs["netuid"], kwargs["hotkey"]), cache=self.cache) # type: ignore
+    async def get_cached_dividends(self, netuid: int | None, hotkey: str | None) -> tuple[list[Dividend], bool]:
+        cache_key = self._make_cache_key(netuid, hotkey)
+        is_cached = True
+        
+        @cached(ttl=60*2, key_builder=lambda func, args, kwargs: cache_key, cache=self.cache) # type: ignore
         async def _inner() -> list[Dividend]:
             # TODO: refresh all available cache keys
+            nonlocal is_cached
+            is_cached = False
             return await self.get_dividends(netuid, hotkey)
-        return await _inner()
+            
+        dividends = await _inner()
+        return dividends, is_cached
 
     async def get_dividends(self, netuid: int | None, hotkey: str | None) -> list[Dividend]:
         # FIXME: hotkey param is not working
@@ -97,3 +107,9 @@ class TaoService:
             netuid=netuid,
             amount=amount,
         )
+
+
+@lru_cache(maxsize=1)
+def get_tao_service() -> TaoService:
+    cache = get_redis_cache()
+    return TaoService(cache)

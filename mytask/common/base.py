@@ -42,7 +42,3 @@ class MyTaskBaseDAO(BaseModel):
     updated_at: MyTaskDatetime
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class MyTaskBaseDTO(BaseModel):
-    id: int
