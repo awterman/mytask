@@ -1,4 +1,5 @@
 import pytest
+from aiocache import RedisCache
 from bittensor import Balance
 from bittensor_wallet import Wallet
 
@@ -7,16 +8,18 @@ from mytask.services.tao_service import Dividend, TaoService
 TEST_NETUID = 1
 TEST_HOTKEY = "5F2CsUDVbRbVMXTh9fAzF9GacjVX7UapvRxidrxe7z8BYckQ"
 
+redis_cache = RedisCache()
+
 
 async def test_initialize():
-    service = TaoService()
+    service = TaoService(redis_cache)
     await service.initialize()
     # No assertions needed as we're just verifying it doesn't raise an exception
 
 async def test_get_dividends_all_netuids():
-    service = TaoService()
+    service = TaoService(redis_cache)
     await service.initialize()
-    dividends = await service.get_dividends(netuids=None, hotkey=None)
+    dividends = await service.get_cached_dividends(netuid=None, hotkey=None)
     
     assert isinstance(dividends, list)
     assert all(isinstance(d, Dividend) for d in dividends)
@@ -25,23 +28,23 @@ async def test_get_dividends_all_netuids():
     assert all(isinstance(d.dividends, int) for d in dividends)
 
 async def test_get_dividends_specific_netuid():
-    service = TaoService()
+    service = TaoService(redis_cache)
     await service.initialize()
     
-    dividends = await service.get_dividends(netuid=TEST_NETUID, hotkey=None)
+    dividends = await service.get_cached_dividends(netuid=TEST_NETUID, hotkey=None)
     assert isinstance(dividends, list)
     assert all(d.netuid == TEST_NETUID for d in dividends)
 
 async def test_get_dividends_with_hotkey():
-    service = TaoService()
+    service = TaoService(redis_cache)
     await service.initialize()
     
-    dividends = await service.get_dividends(netuid=TEST_NETUID, hotkey=TEST_HOTKEY)
+    dividends = await service.get_cached_dividends(netuid=TEST_NETUID, hotkey=TEST_HOTKEY)
     assert isinstance(dividends, list)
     assert all(d.hotkey == TEST_HOTKEY for d in dividends)
 
 async def test_stake_and_unstake():
-    service = TaoService()
+    service = TaoService(redis_cache)
     await service.initialize()
     
     amount = Balance.from_tao(0.1)
