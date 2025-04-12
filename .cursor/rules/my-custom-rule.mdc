@@ -3,4 +3,5 @@ description:
 globs: 
 alwaysApply: true
 ---
-The project use uv as the package manager
+- The project use uv as the package manager.
+- Always use async functions if possible.
