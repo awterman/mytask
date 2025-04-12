@@ -25,3 +25,19 @@ btcli wallet regen-coldkey --mnemonic "word1 word2 ... word12" --wallet-name som
 ```bash
 btcli wallet transfer --dest 5Dp8... --amount 100 --wallet-name some_name --network test
 ```
+
+# Project
+
+## Setup
+
+### Install Dependencies
+
+```bash
+uv sync
+```
+
+### Install Project
+
+```
+uv pip install -e .
+```
