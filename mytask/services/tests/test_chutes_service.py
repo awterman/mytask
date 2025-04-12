@@ -3,7 +3,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from mytask.services.chutes_models import ChuteResponse, ChutesHistory
+from mytask.services.chutes_models import (ChuteResponse, ChutesHistory,
+                                           TweetSentimentAnalysis)
 from mytask.services.chutes_service import ChutesService
 
 
@@ -129,6 +130,62 @@ async def test_get_history():
         args = mock_make_request.call_args[0]
         assert args[0] == "GET"
         assert "chutes?limit=5" in args[1]
+
+
+@pytest.mark.asyncio
+async def test_analyze_tweet_sentiment():
+    """Test analyzing sentiment of tweets"""
+    # Mock tweets
+    tweets = [
+        "I'm loving the new features in this app! Great job team!",
+        "This service is terrible. I've been waiting for hours with no response.",
+        "Just tried the new product, it's okay but nothing special."
+    ]
+    
+    # Mock response from ask_question method
+    mock_ask_response = MagicMock()
+    mock_ask_response.answer = """
+    Here's my sentiment analysis of the tweets:
+    
+    [
+        {
+            "tweet": "I'm loving the new features in this app! Great job team!",
+            "score": 85,
+            "explanation": "Very positive language with exclamation marks"
+        },
+        {
+            "tweet": "This service is terrible. I've been waiting for hours with no response.",
+            "score": -75,
+            "explanation": "Strong negative words like 'terrible'"
+        },
+        {
+            "tweet": "Just tried the new product, it's okay but nothing special.",
+            "score": 10,
+            "explanation": "Mostly neutral with slight positive tone"
+        }
+    ]
+    """
+    
+    # Create service instance with mocked ask_question method
+    with patch.object(ChutesService, 'ask_question', AsyncMock(return_value=mock_ask_response)):
+        service = ChutesService(api_key="dummy_key")
+        
+        # Call the method being tested
+        result = await service.analyze_tweet_sentiment(tweets, model="llama")
+        
+        # Verify the result
+        assert isinstance(result, TweetSentimentAnalysis)
+        assert len(result.scores) == 3
+        assert result.scores[0].score == 85
+        assert result.scores[1].score == -75
+        assert result.scores[2].score == 10
+        
+        # Verify calculated fields
+        assert result.average_score == (85 - 75 + 10) / 3
+        assert result.positive_count == 1
+        assert result.negative_count == 1
+        assert result.neutral_count == 1
+        assert result.overall_sentiment == "neutral"  # Average is close to 0
 
 
 @pytest.mark.asyncio

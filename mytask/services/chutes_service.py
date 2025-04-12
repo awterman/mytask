@@ -1,11 +1,16 @@
+import json
 import os
+import re
 from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
 from pydantic import ValidationError
 
 from mytask.services.chutes_models import (ChuteInput, ChuteResponse,
-                                           ChutesHistory, ChutesHistoryItem)
+                                           ChutesHistory, ChutesHistoryItem,
+                                           TweetSentimentAnalysis,
+                                           TweetSentimentRequest,
+                                           TweetSentimentScore)
 
 
 class ChutesService:
@@ -133,3 +138,81 @@ class ChutesService:
             return ChutesHistory.model_validate(response_data)
         except ValidationError as e:
             raise ValueError(f"Failed to parse Chutes API response: {e}")
+    
+    async def analyze_tweet_sentiment(self, 
+                                tweets: List[str], 
+                                model: str = "llama") -> TweetSentimentAnalysis:
+        """
+        Analyze the sentiment of tweets using Chutes AI with LLaMA.
+        
+        Args:
+            tweets: List of tweet texts to analyze
+            model: The LLM model to use (default: "llama")
+            
+        Returns:
+            TweetSentimentAnalysis object with sentiment scores for each tweet
+        """
+        # Create a context with tweets for the prompt
+        tweet_context = "\n\n".join([f"Tweet: {tweet}" for tweet in tweets])
+        
+        # Create the prompt for sentiment analysis
+        question = """
+        Analyze the sentiment of each tweet below and provide a score from -100 to +100.
+        -100 represents extremely negative sentiment
+        0 represents neutral sentiment
+        +100 represents extremely positive sentiment
+        
+        Format your response as a JSON array of objects with 'tweet', 'score', and 'explanation' fields:
+        [
+            {"tweet": "...", "score": 75, "explanation": "..."},
+            {"tweet": "...", "score": -42, "explanation": "..."},
+            ...
+        ]
+        """
+        
+        # Use ask_question to send the request
+        response = await self.ask_question(
+            question=question,
+            context=tweet_context,
+            model=model
+        )
+        
+        try:
+            # Extract JSON array from the response
+            answer_text = response.answer
+            json_match = re.search(r'\[.*\]', answer_text, re.DOTALL)
+            if not json_match:
+                raise ValueError("Failed to extract JSON from LLM response")
+                
+            json_str = json_match.group(0)
+            scores_data = json.loads(json_str)
+            
+            # Create TweetSentimentScore objects
+            scores = [
+                TweetSentimentScore(
+                    tweet=item.get("tweet", tweets[i] if i < len(tweets) else ""),
+                    score=item.get("score", 0),
+                    explanation=item.get("explanation")
+                )
+                for i, item in enumerate(scores_data)
+            ]
+            
+            # Calculate statistics
+            total_score = sum(score.score for score in scores)
+            average_score = total_score / len(scores) if scores else 0
+            
+            positive_count = sum(1 for score in scores if score.score > 33)
+            negative_count = sum(1 for score in scores if score.score < -33)
+            neutral_count = sum(1 for score in scores if -33 <= score.score <= 33)
+            
+            # Create and return the analysis
+            return TweetSentimentAnalysis(
+                scores=scores,
+                average_score=average_score,
+                positive_count=positive_count,
+                negative_count=negative_count,
+                neutral_count=neutral_count
+            )
+            
+        except (json.JSONDecodeError, ValueError, IndexError, KeyError) as e:
+            raise ValueError(f"Failed to parse sentiment analysis results: {e}. Raw response: {response.answer}")
