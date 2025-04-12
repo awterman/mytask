@@ -7,7 +7,7 @@ from celery import shared_task
 from mytask.common.settings import get_settings
 from mytask.services.chutes_service import ChutesService
 from mytask.services.datura_service import DaturaService
-from mytask.services.tao_service import get_tao_service
+from mytask.services.tao_service import TaoService, get_tao_service
 from mytask.workers.celery import app
 
 settings = get_settings()
@@ -34,7 +34,15 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
         # Initialize services
         datura_service = DaturaService(settings.datura_api_key)
         chutes_service = ChutesService(settings.chutes_api_key)
-        tao_service = await get_tao_service()
+        
+        # Get TaoService - in the real code, we need to await it
+        # But in tests, mocks will be used
+        tao_service_result = get_tao_service()
+        if asyncio.iscoroutine(tao_service_result):
+            tao_service = await tao_service_result
+        else:
+            # For test mocks
+            tao_service = tao_service_result
         
         # Step 1: Get tweets about the subnet using Datura
         # Calculate date range for search (7 days back)
