@@ -26,6 +26,7 @@ class TaoService:
         await self.substrate.initialize()
 
     async def get_dividends(self, netuids: list[int] | None, hotkey: str | None) -> list[Dividend]:
+        # FIXME: hotkey param is not working
         if netuids is None:
             netuids = await self.subtensor.get_subnets()
 
@@ -52,6 +53,7 @@ class TaoService:
         return dividends
 
     async def stake(self, netuid: int, amount: Balance):
+        # FIXME: stake is not working
         return await self.subtensor.add_stake(
             wallet=self.wallet,
             netuid=netuid,
@@ -59,6 +61,7 @@ class TaoService:
         )
 
     async def unstake(self, netuid: int, amount: Balance):
+        # FIXME: unstake is not working
         return await self.subtensor.unstake(
             wallet=self.wallet,
             netuid=netuid,
