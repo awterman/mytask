@@ -110,6 +110,8 @@ class TaoService:
 
 
 @lru_cache(maxsize=1)
-def get_tao_service() -> TaoService:
+async def get_tao_service() -> TaoService:
     cache = get_redis_cache()
-    return TaoService(cache)
+    tao_service = TaoService(cache)
+    await tao_service.initialize()
+    return tao_service

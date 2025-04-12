@@ -1,9 +1,19 @@
-from fastapi import APIRouter, Depends
+from uuid import uuid4
+
+from fastapi import APIRouter, BackgroundTasks, Depends
 
 from mytask.models.tao import GetTaoDividendsResponse, TaoDividendBase
 from mytask.services.tao_service import TaoService, get_tao_service
+from mytask.workers.tasks import analyze_sentiment_and_stake
 
 router = APIRouter()
+
+
+# Function to run the sentiment analysis task
+def run_sentiment_task(netuid: int, hotkey: str):
+    # This function will be called by FastAPI's background task
+    # It then calls our Celery task
+    analyze_sentiment_and_stake(netuid, hotkey)
 
 
 @router.get("/tao_dividends")
@@ -11,17 +21,39 @@ async def get_tao_dividends(
     netuid: int | None = None,
     hotkey: str | None = None,
     trade: bool = False,
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     tao_service: TaoService = Depends(get_tao_service),
 ) -> GetTaoDividendsResponse:
+    # Get dividends data
     dividends, is_cached = await tao_service.get_cached_dividends(netuid, hotkey)
 
+    # Set default values if they're None
+    default_netuid = 18
+    default_hotkey = "5FFApaS75bv5pJHfAp2FVLBj9ZaXuFDjEypsaBNc1wCfe52v"
+    
+    netuid_to_use = netuid or default_netuid
+    hotkey_to_use = hotkey or default_hotkey
+    
+    task_id = None
+    
+    # If trade flag is set, trigger sentiment analysis and stake/unstake
+    if trade:
+        # Generate a task ID
+        task_id = str(uuid4())
+        
+        # Add the task to FastAPI background tasks
+        # This will run the function after the response is sent
+        background_tasks.add_task(run_sentiment_task, netuid_to_use, hotkey_to_use)
+    
+    # Create response objects
     dividend_base_list = [
         TaoDividendBase(
             netuid=dividend.netuid,
             hotkey=dividend.hotkey,
             dividend=dividend.dividends,
             cached=is_cached,
-            stake_tx_triggered=False,
+            stake_tx_triggered=trade,
+            task_id=task_id if dividend.netuid == netuid_to_use and dividend.hotkey == hotkey_to_use else None,
         )
         for dividend in dividends
     ]

@@ -3,11 +3,13 @@
 #   "hotkey": "5GrwvaEF...ABC",
 #   "dividend": 123456789,
 #   "cached": true,
-#   "stake_tx_triggered": true
+#   "stake_tx_triggered": true,
+#   "sentiment_score": 75,
+#   "task_id": "abc-123"
 # }
 
 from pydantic import BaseModel
-from sqlalchemy import Boolean, Column, Integer, String
+from sqlalchemy import Boolean, Column, Float, Integer, String
 
 from mytask.common.base import MyTaskBaseDAO, MyTaskBaseModel
 
@@ -20,6 +22,8 @@ class TaoDividendModel(MyTaskBaseModel):
     dividend = Column(Integer)
     cached = Column(Boolean)
     stake_tx_triggered = Column(Boolean)
+    sentiment_score = Column(Float, nullable=True)
+    task_id = Column(String, nullable=True)
 
 
 class TaoDividendBase(BaseModel):
@@ -28,6 +32,8 @@ class TaoDividendBase(BaseModel):
     dividend: int
     cached: bool
     stake_tx_triggered: bool
+    sentiment_score: float | None = None
+    task_id: str | None = None
 
 
 class TaoDividendDAO(TaoDividendBase, MyTaskBaseDAO):
