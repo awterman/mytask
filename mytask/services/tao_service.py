@@ -14,12 +14,12 @@ class Dividend(BaseModel):
     dividends: int
 
 class TaoService:
-    def __init__(self, wallet: Wallet):
-        self.wallet = wallet
+    def __init__(self, wallet: Wallet | None = None):
+        self.wallet = wallet or Wallet()
 
         # TODO: make this configurable
         self.subtensor = AsyncSubtensor(network="test")
-        self.substrate = AsyncSubstrateInterface("wss://entrypoint-finney.opentensor.ai:443", ss58_format=SS58_FORMAT)
+        self.substrate = AsyncSubstrateInterface("wss://test.finney.opentensor.ai:443", ss58_format=SS58_FORMAT)
 
     async def initialize(self):
         await self.subtensor.initialize()
