@@ -4,8 +4,8 @@ from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import select
 from sqlalchemy import update as sa_update
-from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
-                                    create_async_engine)
+from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
+                                    async_sessionmaker, create_async_engine)
 
 from mytask.common.base import MyTaskBaseDAO, MyTaskBaseModel
 from mytask.common.settings import get_settings
@@ -13,11 +13,13 @@ from mytask.common.settings import get_settings
 T = TypeVar("T", bound=MyTaskBaseDAO)
 S = TypeVar("S", bound=MyTaskBaseModel)
 
+@lru_cache(maxsize=1)
+def get_async_engine() -> AsyncEngine:
+    return create_async_engine(get_settings().postgres_dsn)
 
 @lru_cache(maxsize=1)
 def get_async_session_factory() -> async_sessionmaker[AsyncSession]:
-    engine = create_async_engine(get_settings().postgres_dsn)
-    return async_sessionmaker(engine)
+    return async_sessionmaker(get_async_engine())
 
 
 class BaseTable(Generic[T, S]):
