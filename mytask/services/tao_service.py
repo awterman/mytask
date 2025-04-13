@@ -23,6 +23,13 @@ class Dividend(BaseModel):
 
 class TaoService:
     def __init__(self, cache: RedisCache, wallet: Wallet | None = None):
+        """
+        Initialize the TaoService.
+
+        Args:
+            cache (RedisCache): The cache to use for caching.
+            wallet (Wallet): The wallet to use for staking. The wallet must have a hotkey and registered on the network.
+        """
         self.cache = cache
         self.wallet = wallet or Wallet()
 
@@ -112,16 +119,35 @@ class TaoService:
                 dividends.append(Dividend(netuid=netuid, hotkey=decode_account_id(k), dividends=v.value))
         return dividends
 
-    async def stake(self, netuid: int, amount: Balance):
-        # FIXME: stake is not working
+    async def stake(self, netuid: int, amount: Balance) -> bool:
+        """
+        Stake TAO on a subnet.
+
+        Args:
+            netuid (int): The subnet ID to stake on.
+            amount (Balance): The amount of TAO to stake.
+
+        Returns:
+            bool: True if the stake was successful, False otherwise.
+        """
+
         return await self.subtensor.add_stake(
             wallet=self.wallet,
             netuid=netuid,
             amount=amount,
         )
 
-    async def unstake(self, netuid: int, amount: Balance):
-        # FIXME: unstake is not working
+    async def unstake(self, netuid: int, amount: Balance) -> bool:
+        """
+        Unstake TAO from a subnet.
+
+        Args:
+            netuid (int): The subnet ID to unstake from.
+            amount (Balance): The amount of TAO to unstake.
+
+        Returns:
+            bool: True if the unstake was successful, False otherwise.
+        """
         return await self.subtensor.unstake(
             wallet=self.wallet,
             netuid=netuid,
