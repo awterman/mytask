@@ -42,7 +42,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["uv", "run", "mytask.workers.celery:app"]
+    command:
+      [
+        "uv",
+        "run",
+        "-m",
+        "celery",
+        "-A",
+        "mytask.workers",
+        "worker",
+        "--loglevel=info",
+      ]
     env_file:
       - .env
     depends_on:
