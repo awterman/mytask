@@ -15,7 +15,17 @@ S = TypeVar("S", bound=MyTaskBaseModel)
 
 @lru_cache(maxsize=1)
 def get_async_engine() -> AsyncEngine:
-    return create_async_engine(get_settings().postgres_dsn)
+    # Convert the standard PostgreSQL URL to use the async driver
+    dsn = get_settings().postgres_dsn
+    # If URL starts with postgresql://, change to postgresql+psycopg:// 
+    if dsn.startswith("postgresql://"):
+        dsn = dsn.replace("postgresql://", "postgresql+psycopg://", 1)
+    
+    return create_async_engine(
+        dsn,
+        future=True,
+        pool_pre_ping=True,
+    )
 
 @lru_cache(maxsize=1)
 def get_async_session_factory() -> async_sessionmaker[AsyncSession]:
