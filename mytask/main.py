@@ -9,3 +9,4 @@ app = FastAPI()
 app.add_middleware(AuthMiddleware)
 
 app.include_router(routers.router, prefix="/api")
+
