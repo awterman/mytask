@@ -30,15 +30,17 @@ class TaoDividendBase(BaseModel):
     netuid: int
     hotkey: str
     dividend: int
-    cached: bool
-    stake_tx_triggered: bool
-    sentiment_score: float | None = None
-    task_id: str | None = None
 
 
 class TaoDividendDAO(TaoDividendBase, MyTaskBaseDAO):
     pass
 
 
+class TaoDividendResponseItem(TaoDividendBase):
+    cached: bool
+    stake_tx_triggered: bool
+
+
+
 class GetTaoDividendsResponse(BaseModel):
-    dividends: list[TaoDividendBase]
+    dividends: list[TaoDividendResponseItem]

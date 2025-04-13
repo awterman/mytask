@@ -50,7 +50,6 @@ async def test_get_tao_dividends_without_trade(mock_get_tao_service, mock_run_se
         assert isinstance(dividend, TaoDividendBase)
         assert dividend.cached is True
         assert dividend.stake_tx_triggered is False
-        assert dividend.task_id is None
     
     # Verify no sentiment task was triggered
     mock_run_sentiment_task.assert_not_called()
@@ -91,11 +90,6 @@ async def test_get_tao_dividends_with_trade(mock_get_tao_service, mock_run_senti
         assert dividend.cached is True
         assert dividend.stake_tx_triggered is True
         
-        if dividend.netuid == 18 and dividend.hotkey == "5FFApaS75bv5pJHfAp2FVLBj9ZaXuFDjEypsaBNc1wCfe52v":
-            assert dividend.task_id is not None
-        else:
-            assert dividend.task_id is None
-    
     # Verify the sentiment task was added to background tasks
     assert len(background_tasks.tasks) == 1
 

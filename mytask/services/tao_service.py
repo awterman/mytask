@@ -9,8 +9,12 @@ from bittensor.core.settings import SS58_FORMAT
 from bittensor_wallet import Wallet
 from pydantic import BaseModel
 
+from mytask.common.logger import get_logger
+from mytask.models.tao import TaoDividendDAO
 from mytask.services.redis_cache import get_redis_cache
+from mytask.tables.tao import TaoDividendTable
 
+logger = get_logger()
 
 class Dividend(BaseModel):
     netuid: int
@@ -58,8 +62,24 @@ class TaoService:
             # TODO: refresh all available cache keys
             nonlocal is_cached
             is_cached = False
-            return await self.get_dividends(netuid, hotkey)
-            
+            dividends = await self.get_dividends(netuid, hotkey)
+
+            async def _create_dividends(dividends: list[Dividend]):
+                tao_table = TaoDividendTable()
+                try:
+                    for dividend in dividends:
+                        await tao_table.create(
+                            TaoDividendDAO(
+                                netuid=dividend.netuid,
+                                hotkey=dividend.hotkey,
+                                dividend=dividend.dividends,
+                            )
+                        )
+                except Exception as e:
+                    logger.error(f"Error creating dividends: {e}")
+            asyncio.create_task(_create_dividends(dividends))
+            return dividends
+
         dividends = await _inner()
         return dividends, is_cached
 

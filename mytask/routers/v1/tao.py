@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 
-from mytask.models.tao import GetTaoDividendsResponse, TaoDividendBase
+from mytask.models.tao import GetTaoDividendsResponse, TaoDividendResponseItem
 from mytask.services.tao_service import TaoService, get_tao_service
 from mytask.workers.tasks import analyze_sentiment_and_stake
 
@@ -34,26 +34,20 @@ async def get_tao_dividends(
     netuid_to_use = netuid or default_netuid
     hotkey_to_use = hotkey or default_hotkey
     
-    task_id = None
-    
     # If trade flag is set, trigger sentiment analysis and stake/unstake
     if trade:
-        # Generate a task ID
-        task_id = str(uuid4())
-        
         # Add the task to FastAPI background tasks
         # This will run the function after the response is sent
         background_tasks.add_task(run_sentiment_task, netuid_to_use, hotkey_to_use)
     
     # Create response objects
     dividend_base_list = [
-        TaoDividendBase(
+        TaoDividendResponseItem(
             netuid=dividend.netuid,
             hotkey=dividend.hotkey,
             dividend=dividend.dividends,
             cached=is_cached,
             stake_tx_triggered=trade,
-            task_id=task_id if dividend.netuid == netuid_to_use and dividend.hotkey == hotkey_to_use else None,
         )
         for dividend in dividends
     ]

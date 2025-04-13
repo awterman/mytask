@@ -25,21 +25,27 @@ class BaseTable(Generic[T, S]):
         self,
         model: Type[T],
         table_model: Type[S],
-        session: AsyncSession,
+        session: AsyncSession | None = None,
     ):
         self.model = model
         self.table_model = table_model
-        self.session = session
+        self.session = session or get_async_session_factory()()
+        self.is_session_managed = session is None
 
     async def create(self, data: T) -> T:
         self.session.add(data)
         await self.session.refresh(data)
+        if self.is_session_managed:
+            await self.session.commit()
+            await self.session.close()
         return data
 
     async def get(self, id: int) -> Optional[T]:
         stmt = select(self.table_model).where(self.table_model.id == id)
         result = await self.session.execute(stmt)
         db_obj = result.scalars().first()
+        if self.is_session_managed:
+            await self.session.close()
         if db_obj is None:
             return None
         return self.model.model_validate(db_obj)
@@ -48,6 +54,8 @@ class BaseTable(Generic[T, S]):
         stmt = select(self.table_model)
         result = await self.session.execute(stmt)
         db_objects = result.scalars().all()
+        if self.is_session_managed:
+            await self.session.close()
         return [self.model.model_validate(obj) for obj in db_objects]
 
     async def update(self, id: int, data: Dict[str, Any]) -> Optional[T]:
@@ -59,6 +67,9 @@ class BaseTable(Generic[T, S]):
         )
         result = await self.session.execute(stmt)
         db_obj = result.scalars().first()
+        if self.is_session_managed:
+            await self.session.commit()
+            await self.session.close()
         if db_obj is None:
             return None
         return self.model.model_validate(db_obj)
@@ -66,6 +77,9 @@ class BaseTable(Generic[T, S]):
     async def delete(self, id: int) -> bool:
         stmt = sa_delete(self.table_model).where(self.table_model.id == id)
         result = await self.session.execute(stmt)
+        if self.is_session_managed:
+            await self.session.commit()
+            await self.session.close()
         return result.rowcount > 0
 
     async def filter(self, **kwargs) -> List[T]:
@@ -75,4 +89,6 @@ class BaseTable(Generic[T, S]):
                 stmt = stmt.where(getattr(self.table_model, key) == value)
         result = await self.session.execute(stmt)
         db_objects = result.scalars().all()
+        if self.is_session_managed:
+            await self.session.close()
         return [self.model.model_validate(obj) for obj in db_objects]
