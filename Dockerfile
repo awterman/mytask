@@ -6,4 +6,3 @@ WORKDIR /app
 COPY . .
 
 RUN uv sync --frozen
-
