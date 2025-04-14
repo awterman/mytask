@@ -83,11 +83,8 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
         # Step 2: Analyze sentiment with Chutes
         logger.info("Analyzing tweet sentiment")
         tweet_texts = [tweet.text for tweet in tweets]
-        sentiment_analysis = await chutes_service.analyze_tweet_sentiment(tweet_texts)
-        
-        # Calculate final sentiment score
-        sentiment_score = sentiment_analysis.average_score
-        logger.info(f"Calculated sentiment score: {sentiment_score}")
+        sentiment_score = await chutes_service.score_tweet_sentiment(tweet_texts)
+        logger.info(f"Sentiment score: {sentiment_score}")
         
         # Step 3: Stake or unstake based on sentiment
         stake_amount = abs(sentiment_score) * 0.01  # 0.01 tao * sentiment score

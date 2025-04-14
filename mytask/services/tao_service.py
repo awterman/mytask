@@ -144,6 +144,7 @@ class TaoService:
         Returns:
             bool: True if the stake was successful, False otherwise.
         """
+        logger.info(f"Staking {amount} TAO on netuid {netuid}")
 
         return await self.subtensor.add_stake(
             wallet=self.wallet,
@@ -162,6 +163,8 @@ class TaoService:
         Returns:
             bool: True if the unstake was successful, False otherwise.
         """
+        logger.info(f"Unstaking {amount} TAO from netuid {netuid}")
+
         return await self.subtensor.unstake(
             wallet=self.wallet,
             netuid=netuid,
