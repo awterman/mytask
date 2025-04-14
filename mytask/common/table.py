@@ -1,4 +1,3 @@
-from functools import lru_cache
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from sqlalchemy import delete as sa_delete
@@ -9,11 +8,12 @@ from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
 
 from mytask.common.base import MyTaskBaseDAO, MyTaskBaseModel
 from mytask.common.settings import get_settings
+from mytask.common.singleton import singleton
 
 T = TypeVar("T", bound=MyTaskBaseDAO)
 S = TypeVar("S", bound=MyTaskBaseModel)
 
-@lru_cache(maxsize=1)
+@singleton
 def get_async_engine() -> AsyncEngine:
     # Convert the standard PostgreSQL URL to use the async driver
     dsn = get_settings().postgres_dsn
@@ -27,7 +27,7 @@ def get_async_engine() -> AsyncEngine:
         pool_pre_ping=True,
     )
 
-@lru_cache(maxsize=1)
+@singleton
 def get_async_session_factory() -> async_sessionmaker[AsyncSession]:
     return async_sessionmaker(get_async_engine())
 

@@ -1,5 +1,4 @@
 import asyncio
-from functools import lru_cache
 
 from bittensor import AsyncSubtensor, Balance
 from bittensor.core.async_subtensor import AsyncSubstrateInterface
@@ -10,6 +9,7 @@ from pydantic import BaseModel
 
 from mytask.common.logger import get_logger
 from mytask.common.redis_cache import RedisCache, redis_cache
+from mytask.common.singleton import async_singleton, singleton
 from mytask.models.tao import TaoDividendDAO
 from mytask.services.redis_cache import get_redis_cache
 from mytask.tables.tao import TaoDividendTable
@@ -55,21 +55,33 @@ class TaoService:
         return f"netuid:{netuid},hotkey:{hotkey}"
 
     async def _get_cached_all_netuids(self) -> list[int]:
-        @redis_cache(redis_cache=self.cache, ttl=60*2, key_builder=lambda *args, **kwargs: "all_netuids") 
+        logger.info("Getting cached all netuids")
+
+        # Due to the slow network, we cache for 1 hour instead of 2 minutes
+        @redis_cache(redis_cache=self.cache, ttl=60*60, key_builder=lambda *args, **kwargs: "all_netuids") 
         async def _inner() -> list[int]:
+            logger.info("Cache miss, getting all netuids")
             return await self.subtensor.get_subnets()
         return await _inner()
 
     async def get_cached_dividends(self, netuid: int | None, hotkey: str | None) -> tuple[list[Dividend], bool]:
+        logger.info(f"Getting cached dividends for {netuid} and {hotkey}")
+
         cache_key = self._make_cache_key(netuid, hotkey)
         is_cached = True
+
+        logger.info(f"Cache key: {cache_key}")
         
-        @redis_cache(redis_cache=self.cache, ttl=60*2, key_builder=lambda *args, **kwargs: cache_key) 
+        # Due to the slow network, we cache for 1 hour instead of 2 minutes
+        @redis_cache(redis_cache=self.cache, ttl=60*60, key_builder=lambda *args, **kwargs: cache_key) 
         async def _inner() -> list[Dividend]:
             # TODO: refresh all available cache keys
             nonlocal is_cached
             is_cached = False
+
+            logger.info("Cache miss, getting dividends")
             dividends = await self.get_dividends(netuid, hotkey)
+            logger.info(f"Got {len(dividends)} dividends for {netuid} and {hotkey}")
 
             async def _create_dividends(dividends: list[Dividend]):
                 tao_table = TaoDividendTable()
@@ -93,11 +105,12 @@ class TaoService:
     async def get_dividends(self, netuid: int | None, hotkey: str | None) -> list[Dividend]:
         # FIXME: hotkey param is not working
         if netuid is None:
+            logger.info("Getting all netuids")
             netuids = await self._get_cached_all_netuids()
         else:
             netuids = [netuid]
 
-        semaphore = asyncio.Semaphore(50)  # Limit concurrent tasks to 4
+        semaphore = asyncio.Semaphore(100)  # Limit concurrent tasks to 4
         async def query_dividends(netuid: int):
             params: list = [netuid]
             if hotkey is not None:
@@ -110,6 +123,7 @@ class TaoService:
                     params,
                 )
 
+        logger.info(f"Querying dividends for {netuids}")
         tasks = [query_dividends(netuid) for netuid in netuids]
         results = await asyncio.gather(*tasks)
 
@@ -154,7 +168,7 @@ class TaoService:
             amount=amount,
         )
 
-
+@async_singleton
 async def get_tao_service() -> TaoService:
     cache = get_redis_cache()
     tao_service = TaoService(cache)

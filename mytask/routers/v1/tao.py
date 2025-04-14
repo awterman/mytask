@@ -2,12 +2,13 @@ from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 
+from mytask.common.logger import get_logger
 from mytask.models.tao import GetTaoDividendsResponse, TaoDividendResponseItem
 from mytask.services.tao_service import TaoService, get_tao_service
 from mytask.workers.tasks import analyze_sentiment_and_stake
 
 router = APIRouter()
-
+logger = get_logger()
 
 # Function to run the sentiment analysis task
 def run_sentiment_task(netuid: int, hotkey: str):
@@ -24,6 +25,8 @@ async def get_tao_dividends(
     background_tasks: BackgroundTasks = BackgroundTasks(),
     tao_service: TaoService = Depends(get_tao_service),
 ) -> GetTaoDividendsResponse:
+    logger.info(f"Getting TAO dividends for {netuid} and {hotkey}")
+
     # Get dividends data
     dividends, is_cached = await tao_service.get_cached_dividends(netuid, hotkey)
 
