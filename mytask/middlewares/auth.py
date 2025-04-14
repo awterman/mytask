@@ -8,8 +8,6 @@ from mytask.common.settings import get_settings
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # Skip auth for specific paths if needed
-        print(request.url.path)
-        return await call_next(request)
         if request.url.path in ["/docs", "/redoc", "/openapi.json"]:
             return await call_next(request)
 

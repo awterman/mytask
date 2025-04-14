@@ -121,7 +121,6 @@ class TaoService:
     async def get_dividends(
         self, netuid: int | None, hotkey: str | None
     ) -> list[Dividend]:
-        # FIXME: hotkey param is not working
         if netuid is None:
             logger.info("Getting all netuids")
             netuids = await self._get_cached_all_netuids()
@@ -132,8 +131,6 @@ class TaoService:
 
         async def query_dividends(netuid: int):
             params: list = [netuid]
-            if hotkey is not None:
-                params.append(hotkey)
 
             async with semaphore:
                 return await self.substrate.query_map(
@@ -154,6 +151,10 @@ class TaoService:
                         netuid=netuid, hotkey=decode_account_id(k), dividends=v.value
                     )
                 )
+
+        if hotkey is not None:
+            dividends = [dividend for dividend in dividends if dividend.hotkey == hotkey]
+
         return dividends
 
     async def stake(self, netuid: int, amount: Balance) -> bool:
