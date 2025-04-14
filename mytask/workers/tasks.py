@@ -4,12 +4,14 @@ from datetime import datetime, timedelta
 from bittensor import Balance
 from celery import shared_task
 
+from mytask.common.logger import get_logger
 from mytask.common.settings import get_settings
 from mytask.services.chutes_service import ChutesService
 from mytask.services.datura_service import DaturaService
-from mytask.services.tao_service import TaoService, get_tao_service
+from mytask.services.tao_service import get_tao_service
 from mytask.workers.celery import app
 
+logger = get_logger()
 settings = get_settings()
 
 def run_async(coro):
@@ -26,12 +28,17 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
         netuid: Network UID for the subnet
         hotkey: Hotkey to stake/unstake from
     """
+    logger.info(f"Starting analyze_sentiment_and_stake task for netuid={netuid}, hotkey={hotkey}")
+    
     async def _run():
         # Default values if not provided
         netuid_to_use = netuid or 18
         hotkey_to_use = hotkey or "5FFApaS75bv5pJHfAp2FVLBj9ZaXuFDjEypsaBNc1wCfe52v"
         
+        logger.debug(f"Using netuid={netuid_to_use}, hotkey={hotkey_to_use}")
+        
         # Initialize services
+        logger.info("Initializing services")
         datura_service = DaturaService(settings.datura_api_key)
         chutes_service = ChutesService(settings.chutes_api_key)
         
@@ -44,6 +51,7 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
         end_date = datetime.now().strftime("%Y-%m-%d")
         start_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
         
+        logger.info(f"Searching tweets from {start_date} to {end_date} for subnet {netuid_to_use}")
         tweets = await datura_service.search_twitter(
             query=f"Bittensor netuid {netuid_to_use}",
             sort="Latest",
@@ -56,14 +64,19 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
         
         # If no tweets found, return early
         if not tweets:
+            logger.warning(f"No tweets found for netuid {netuid_to_use}")
             return {"status": "no_tweets", "netuid": netuid_to_use, "hotkey": hotkey_to_use}
         
+        logger.info(f"Found {len(tweets)} tweets for analysis")
+        
         # Step 2: Analyze sentiment with Chutes
+        logger.info("Analyzing tweet sentiment")
         tweet_texts = [tweet.text for tweet in tweets]
         sentiment_analysis = await chutes_service.analyze_tweet_sentiment(tweet_texts)
         
         # Calculate final sentiment score
         sentiment_score = sentiment_analysis.average_score
+        logger.info(f"Calculated sentiment score: {sentiment_score}")
         
         # Step 3: Stake or unstake based on sentiment
         stake_amount = abs(sentiment_score) * 0.01  # 0.01 tao * sentiment score
@@ -71,13 +84,17 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
         if sentiment_score > 0:
             # Positive sentiment: stake
             amount = Balance.from_tao(stake_amount)
+            logger.info(f"Positive sentiment detected. Staking {stake_amount} TAO to netuid {netuid_to_use}")
             result = await tao_service.stake(netuid=netuid_to_use, amount=amount)
             action = "stake"
         else:
             # Negative sentiment: unstake
             amount = Balance.from_tao(stake_amount)
+            logger.info(f"Negative sentiment detected. Unstaking {stake_amount} TAO from netuid {netuid_to_use}")
             result = await tao_service.unstake(netuid=netuid_to_use, amount=amount)
             action = "unstake"
+        
+        logger.info(f"Transaction completed: {action} action with result: {result}")
         
         return {
             "status": "completed",
@@ -89,5 +106,11 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
             "tx_result": str(result)
         }
     
-    # Run the async function in the sync context
-    return run_async(_run()) 
+    try:
+        # Run the async function in the sync context
+        result = run_async(_run())
+        logger.info(f"Task completed successfully: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"Error in analyze_sentiment_and_stake task: {str(e)}", exc_info=True)
+        raise 

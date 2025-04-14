@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - .env.docker
     command:
       - "uv"
       - "run"
@@ -54,7 +54,7 @@ services:
         "--loglevel=info",
       ]
     env_file:
-      - .env
+      - .env.docker
     volumes:
       - /home/z/.bittensor:/root/.bittensor
     depends_on:
