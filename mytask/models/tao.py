@@ -41,6 +41,5 @@ class TaoDividendResponseItem(TaoDividendBase):
     stake_tx_triggered: bool
 
 
-
 class GetTaoDividendsResponse(BaseModel):
     dividends: list[TaoDividendResponseItem]

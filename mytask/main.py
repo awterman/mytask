@@ -13,4 +13,3 @@ app.add_middleware(LoggingMiddleware)
 app.add_middleware(AuthMiddleware)
 
 app.include_router(routers.router, prefix="/api")
-

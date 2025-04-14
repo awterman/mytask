@@ -1,10 +1,16 @@
-import asyncio
 import inspect
 import json
 from functools import wraps
-from typing import (Any, Callable, Dict, List, Optional, TypeVar, cast,
-                    get_args, get_origin)
-from uuid import uuid4
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    TypeVar,
+    get_args,
+    get_origin,
+)
 
 from pydantic import BaseModel
 from redis.asyncio import Redis
@@ -13,7 +19,7 @@ RT = TypeVar("RT")
 
 
 class RedisCache:
-    def __init__(self, redis: Redis, default_ttl: int = 60*2):
+    def __init__(self, redis: Redis, default_ttl: int = 60 * 2):
         self.redis = redis
         self.default_ttl = default_ttl
 
@@ -29,22 +35,24 @@ class RedisCache:
         # Handle single Pydantic model
         if inspect.isclass(type_hint) and issubclass(type_hint, BaseModel):
             return type_hint.model_validate(data)
-        
+
         # Handle container types (list, dict)
         origin = get_origin(type_hint)
         if origin is not None:
             args = get_args(type_hint)
-            
-            # Handle lists 
+
+            # Handle lists
             if origin is list or origin is List:
                 item_type = args[0]
                 return [self._parse_with_type(item, item_type) for item in data]
-            
+
             # Handle dictionaries
             elif origin is dict or origin is Dict:
                 key_type, value_type = args
-                return {k: self._parse_with_type(v, value_type) for k, v in data.items()}
-        
+                return {
+                    k: self._parse_with_type(v, value_type) for k, v in data.items()
+                }
+
         # Default case for primitive types
         return data
 
@@ -58,7 +66,11 @@ class RedisCache:
             data = value.model_dump_json()
         elif isinstance(value, list) and value and isinstance(value[0], BaseModel):
             data = json.dumps([item.model_dump() for item in value])
-        elif isinstance(value, dict) and value and isinstance(next(iter(value.values())), BaseModel):
+        elif (
+            isinstance(value, dict)
+            and value
+            and isinstance(next(iter(value.values())), BaseModel)
+        ):
             data = json.dumps({k: v.model_dump() for k, v in value.items()})
         else:
             data = json.dumps(value)

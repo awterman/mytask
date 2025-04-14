@@ -7,7 +7,7 @@ settings = get_settings()
 app = Celery(
     "mytask",
     broker=f"redis://{settings.redis_host}:{settings.redis_port}",
-    backend=f"redis://{settings.redis_host}:{settings.redis_port}"
+    backend=f"redis://{settings.redis_host}:{settings.redis_port}",
 )
 
 app.conf.update(
@@ -19,4 +19,4 @@ app.conf.update(
 )
 
 # Load tasks from all modules in the tasks package
-app.autodiscover_tasks(["mytask.workers.tasks"]) 
+app.autodiscover_tasks(["mytask.workers.tasks"])

@@ -2,9 +2,8 @@ from datetime import datetime, timezone
 from typing import Annotated
 from uuid import uuid4
 
-from pydantic import (BaseModel, BeforeValidator, ConfigDict, Field,
-                      PlainSerializer)
-from sqlalchemy import Column, DateTime, Integer, String
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PlainSerializer
+from sqlalchemy import Column, DateTime, String
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -15,7 +14,11 @@ class MyTaskBaseModel(Base):
 
     id = Column(String, primary_key=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 def validate_datetime(dt: str | datetime) -> datetime:
@@ -40,7 +43,11 @@ MyTaskDatetime = Annotated[
 
 class MyTaskBaseDAO(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
-    created_at: MyTaskDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: MyTaskDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: MyTaskDatetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: MyTaskDatetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
     model_config = ConfigDict(from_attributes=True)

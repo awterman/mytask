@@ -3,8 +3,12 @@ from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import select
 from sqlalchemy import update as sa_update
-from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
-                                    async_sessionmaker, create_async_engine)
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from mytask.common.base import MyTaskBaseDAO, MyTaskBaseModel
 from mytask.common.settings import get_settings
@@ -13,19 +17,21 @@ from mytask.common.singleton import singleton
 T = TypeVar("T", bound=MyTaskBaseDAO)
 S = TypeVar("S", bound=MyTaskBaseModel)
 
+
 @singleton
 def get_async_engine() -> AsyncEngine:
     # Convert the standard PostgreSQL URL to use the async driver
     dsn = get_settings().postgres_dsn
-    # If URL starts with postgresql://, change to postgresql+psycopg:// 
+    # If URL starts with postgresql://, change to postgresql+psycopg://
     if dsn.startswith("postgresql://"):
         dsn = dsn.replace("postgresql://", "postgresql+psycopg://", 1)
-    
+
     return create_async_engine(
         dsn,
         future=True,
         pool_pre_ping=True,
     )
+
 
 @singleton
 def get_async_session_factory() -> async_sessionmaker[AsyncSession]:

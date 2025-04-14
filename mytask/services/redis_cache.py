@@ -9,5 +9,9 @@ from mytask.common.singleton import singleton
 def get_redis_cache() -> RedisCache:
     settings = get_settings()
 
-    redis = Redis(host=settings.redis_host, port=settings.redis_port, password=settings.redis_password)
+    redis = Redis(
+        host=settings.redis_host,
+        port=settings.redis_port,
+        password=settings.redis_password,
+    )
     return RedisCache(redis)

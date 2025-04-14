@@ -1,9 +1,10 @@
 import asyncio
 import threading
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar, Union, cast
+from typing import Awaitable, Callable, TypeVar
 
 T = TypeVar("T")
+
 
 def singleton(func: Callable[[], T]) -> Callable[[], T]:
     """Decorator that ensures only one instance of the decorated function's return value exists."""

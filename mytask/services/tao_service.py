@@ -9,17 +9,19 @@ from pydantic import BaseModel
 
 from mytask.common.logger import get_logger
 from mytask.common.redis_cache import RedisCache, redis_cache
-from mytask.common.singleton import async_singleton, singleton
+from mytask.common.singleton import async_singleton
 from mytask.models.tao import TaoDividendDAO
 from mytask.services.redis_cache import get_redis_cache
 from mytask.tables.tao import TaoDividendTable
 
 logger = get_logger()
 
+
 class Dividend(BaseModel):
     netuid: int
     hotkey: str
     dividends: int
+
 
 class TaoService:
     def __init__(self, cache: RedisCache, wallet: Wallet | None = None):
@@ -35,7 +37,9 @@ class TaoService:
 
         # TODO: make this configurable
         self.subtensor = AsyncSubtensor(network="test")
-        self.substrate = AsyncSubstrateInterface("wss://test.finney.opentensor.ai:443", ss58_format=SS58_FORMAT)
+        self.substrate = AsyncSubstrateInterface(
+            "wss://test.finney.opentensor.ai:443", ss58_format=SS58_FORMAT
+        )
 
     async def initialize(self):
         await self.subtensor.initialize()
@@ -58,22 +62,33 @@ class TaoService:
         logger.info("Getting cached all netuids")
 
         # Due to the slow network, we cache for 1 hour instead of 2 minutes
-        @redis_cache(redis_cache=self.cache, ttl=60*60, key_builder=lambda *args, **kwargs: "all_netuids") 
+        @redis_cache(
+            redis_cache=self.cache,
+            ttl=60 * 60,
+            key_builder=lambda *args, **kwargs: "all_netuids",
+        )
         async def _inner() -> list[int]:
             logger.info("Cache miss, getting all netuids")
             return await self.subtensor.get_subnets()
+
         return await _inner()
 
-    async def get_cached_dividends(self, netuid: int | None, hotkey: str | None) -> tuple[list[Dividend], bool]:
+    async def get_cached_dividends(
+        self, netuid: int | None, hotkey: str | None
+    ) -> tuple[list[Dividend], bool]:
         logger.info(f"Getting cached dividends for {netuid} and {hotkey}")
 
         cache_key = self._make_cache_key(netuid, hotkey)
         is_cached = True
 
         logger.info(f"Cache key: {cache_key}")
-        
+
         # Due to the slow network, we cache for 1 hour instead of 2 minutes
-        @redis_cache(redis_cache=self.cache, ttl=60*60, key_builder=lambda *args, **kwargs: cache_key) 
+        @redis_cache(
+            redis_cache=self.cache,
+            ttl=60 * 60,
+            key_builder=lambda *args, **kwargs: cache_key,
+        )
         async def _inner() -> list[Dividend]:
             # TODO: refresh all available cache keys
             nonlocal is_cached
@@ -96,13 +111,16 @@ class TaoService:
                         )
                 except Exception as e:
                     logger.error(f"Error creating dividends: {e}")
+
             asyncio.create_task(_create_dividends(dividends))
             return dividends
 
         dividends = await _inner()
         return dividends, is_cached
 
-    async def get_dividends(self, netuid: int | None, hotkey: str | None) -> list[Dividend]:
+    async def get_dividends(
+        self, netuid: int | None, hotkey: str | None
+    ) -> list[Dividend]:
         # FIXME: hotkey param is not working
         if netuid is None:
             logger.info("Getting all netuids")
@@ -111,6 +129,7 @@ class TaoService:
             netuids = [netuid]
 
         semaphore = asyncio.Semaphore(100)  # Limit concurrent tasks to 4
+
         async def query_dividends(netuid: int):
             params: list = [netuid]
             if hotkey is not None:
@@ -129,8 +148,12 @@ class TaoService:
 
         dividends = []
         for netuid, result in zip(netuids, results):
-            async for k, v in result: # type: ignore
-                dividends.append(Dividend(netuid=netuid, hotkey=decode_account_id(k), dividends=v.value))
+            async for k, v in result:  # type: ignore
+                dividends.append(
+                    Dividend(
+                        netuid=netuid, hotkey=decode_account_id(k), dividends=v.value
+                    )
+                )
         return dividends
 
     async def stake(self, netuid: int, amount: Balance) -> bool:
@@ -170,6 +193,7 @@ class TaoService:
             netuid=netuid,
             amount=amount,
         )
+
 
 @async_singleton
 async def get_tao_service() -> TaoService:
