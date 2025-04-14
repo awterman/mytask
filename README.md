@@ -41,3 +41,28 @@ uv sync
 ```
 uv pip install -e .
 ```
+
+## Local Development
+
+Copy `.env.example` to `.env` and set the environment variables.
+
+### Run Project
+
+```
+uv run uvicorn mytask.main:app --reload
+```
+
+### Run Celery Worker
+
+```
+celery -A mytask.workers.celery worker --loglevel=info
+```
+
+## Build Docker Image
+
+- Copy `.env.example` to `.env.docker` and set the environment variables.
+- Setup a Bittensor wallet at 
+
+```
+docker compose up --build
+```
