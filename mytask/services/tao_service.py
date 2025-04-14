@@ -55,7 +55,7 @@ class TaoService:
         return f"netuid:{netuid},hotkey:{hotkey}"
 
     async def _get_cached_all_netuids(self) -> list[int]:
-        @redis_cache(redis_cache=self.cache, ttl=60*2, key_builder=lambda func, args, kwargs: "all_netuids") 
+        @redis_cache(redis_cache=self.cache, ttl=60*2, key_builder=lambda *args, **kwargs: "all_netuids") 
         async def _inner() -> list[int]:
             return await self.subtensor.get_subnets()
         return await _inner()
@@ -64,7 +64,7 @@ class TaoService:
         cache_key = self._make_cache_key(netuid, hotkey)
         is_cached = True
         
-        @redis_cache(redis_cache=self.cache, ttl=60*2, key_builder=lambda func, args, kwargs: cache_key) 
+        @redis_cache(redis_cache=self.cache, ttl=60*2, key_builder=lambda *args, **kwargs: cache_key) 
         async def _inner() -> list[Dividend]:
             # TODO: refresh all available cache keys
             nonlocal is_cached

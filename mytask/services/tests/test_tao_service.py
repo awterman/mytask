@@ -1,14 +1,15 @@
 import pytest
-from aiocache import RedisCache
 from bittensor import Balance
 from bittensor_wallet import Wallet
+from redis.asyncio import Redis
 
+from mytask.common.redis_cache import RedisCache
 from mytask.services.tao_service import Dividend, TaoService
 
 TEST_NETUID = 1
 TEST_HOTKEY = "5F2CsUDVbRbVMXTh9fAzF9GacjVX7UapvRxidrxe7z8BYckQ"
 
-redis_cache = RedisCache()
+redis_cache = RedisCache(redis=Redis(host="localhost", port=6379, password=""))
 
 
 async def test_initialize():
