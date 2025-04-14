@@ -141,7 +141,7 @@ class ChutesService:
     
     async def analyze_tweet_sentiment(self, 
                                 tweets: List[str], 
-                                model: str = "llama") -> TweetSentimentAnalysis:
+                                model: str = "unsloth/Llama-3.2-3B-Instruct") -> TweetSentimentAnalysis:
         """
         Analyze the sentiment of tweets using Chutes AI with LLaMA.
         

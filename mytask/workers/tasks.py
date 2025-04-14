@@ -16,8 +16,19 @@ settings = get_settings()
 
 def run_async(coro):
     """Helper function to run async code in a synchronous Celery task."""
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(coro)
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # Create a new event loop if one doesn't exist in the current thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        # Close the loop if we created a new one
+        if loop != asyncio.get_event_loop_policy().get_event_loop():
+            loop.close()
 
 @shared_task(name="analyze_sentiment_and_stake")
 def analyze_sentiment_and_stake(netuid: int, hotkey: str):
