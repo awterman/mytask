@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiocache[redis]>=0.12.3",
-    "aioredis>=2.0.1",
     "async-substrate-interface>=1.1.0",
     "asyncpg>=0.30.0",
     "bittensor>=9.3.0",

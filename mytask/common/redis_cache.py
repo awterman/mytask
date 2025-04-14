@@ -6,8 +6,8 @@ from typing import (Any, Callable, Dict, List, Optional, TypeVar, cast,
                     get_args, get_origin)
 from uuid import uuid4
 
-from aioredis import Redis
 from pydantic import BaseModel
+from redis.asyncio import Redis
 
 RT = TypeVar("RT")
 

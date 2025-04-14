@@ -1,7 +1,6 @@
 import asyncio
 from functools import lru_cache
 
-from aiocache import RedisCache, cached
 from bittensor import AsyncSubtensor, Balance
 from bittensor.core.async_subtensor import AsyncSubstrateInterface
 from bittensor.core.chain_data import decode_account_id
@@ -10,6 +9,7 @@ from bittensor_wallet import Wallet
 from pydantic import BaseModel
 
 from mytask.common.logger import get_logger
+from mytask.common.redis_cache import RedisCache, redis_cache
 from mytask.models.tao import TaoDividendDAO
 from mytask.services.redis_cache import get_redis_cache
 from mytask.tables.tao import TaoDividendTable
@@ -55,7 +55,7 @@ class TaoService:
         return f"netuid:{netuid},hotkey:{hotkey}"
 
     async def _get_cached_all_netuids(self) -> list[int]:
-        @cached(ttl=60*2, key="all_netuids", cache=self.cache) # type: ignore
+        @redis_cache(redis_cache=self.cache, ttl=60*2, key_builder=lambda func, args, kwargs: "all_netuids") 
         async def _inner() -> list[int]:
             return await self.subtensor.get_subnets()
         return await _inner()
@@ -64,7 +64,7 @@ class TaoService:
         cache_key = self._make_cache_key(netuid, hotkey)
         is_cached = True
         
-        @cached(ttl=60*2, key_builder=lambda func, args, kwargs: cache_key, cache=self.cache) # type: ignore
+        @redis_cache(redis_cache=self.cache, ttl=60*2, key_builder=lambda func, args, kwargs: cache_key) 
         async def _inner() -> list[Dividend]:
             # TODO: refresh all available cache keys
             nonlocal is_cached
@@ -155,7 +155,6 @@ class TaoService:
         )
 
 
-@lru_cache(maxsize=1)
 async def get_tao_service() -> TaoService:
     cache = get_redis_cache()
     tao_service = TaoService(cache)
