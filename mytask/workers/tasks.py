@@ -37,12 +37,7 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
         
         # Get TaoService - in the real code, we need to await it
         # But in tests, mocks will be used
-        tao_service_result = get_tao_service()
-        if asyncio.iscoroutine(tao_service_result):
-            tao_service = await tao_service_result
-        else:
-            # For test mocks
-            tao_service = tao_service_result
+        tao_service = await get_tao_service()
         
         # Step 1: Get tweets about the subnet using Datura
         # Calculate date range for search (7 days back)
