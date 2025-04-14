@@ -55,6 +55,8 @@ services:
       ]
     env_file:
       - .env
+    volumes:
+      - /home/z/.bittensor:/root/.bittensor
     depends_on:
       - redis
 
