@@ -9,6 +9,7 @@ from mytask.common.settings import get_settings
 from mytask.services.chutes_service import ChutesService
 from mytask.services.datura_service import DaturaService
 from mytask.services.tao_service import get_tao_service
+from mytask.workers.celery import app
 
 logger = get_logger()
 settings = get_settings()
@@ -31,7 +32,7 @@ def run_async(coro):
             loop.close()
 
 
-@shared_task(name="analyze_sentiment_and_stake")
+@app.task
 def analyze_sentiment_and_stake(netuid: int, hotkey: str):
     """
     Analyze sentiment for a subnet and stake/unstake based on sentiment score.
