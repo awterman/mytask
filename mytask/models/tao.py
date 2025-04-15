@@ -20,10 +20,6 @@ class TaoDividendModel(MyTaskBaseModel):
     netuid = Column(Integer)
     hotkey = Column(String)
     dividend = Column(Integer)
-    cached = Column(Boolean)
-    stake_tx_triggered = Column(Boolean)
-    sentiment_score = Column(Float, nullable=True)
-    task_id = Column(String, nullable=True)
 
 
 class TaoDividendBase(BaseModel):

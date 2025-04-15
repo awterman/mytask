@@ -100,6 +100,7 @@ class TaoService:
 
             async def _create_dividends(dividends: list[Dividend]):
                 tao_table = TaoDividendTable()
+                logger.info(f"Creating {len(dividends)} dividends in table")
                 try:
                     for dividend in dividends:
                         await tao_table.create(

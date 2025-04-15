@@ -3,12 +3,8 @@ from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import select
 from sqlalchemy import update as sa_update
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
+                                    async_sessionmaker, create_async_engine)
 
 from mytask.common.base import MyTaskBaseDAO, MyTaskBaseModel
 from mytask.common.settings import get_settings
@@ -25,7 +21,6 @@ def get_async_engine() -> AsyncEngine:
     # If URL starts with postgresql://, change to postgresql+psycopg://
     if dsn.startswith("postgresql://"):
         dsn = dsn.replace("postgresql://", "postgresql+psycopg://", 1)
-
     return create_async_engine(
         dsn,
         future=True,
@@ -51,8 +46,8 @@ class BaseTable(Generic[T, S]):
         self.is_session_managed = session is None
 
     async def create(self, data: T) -> T:
-        self.session.add(data)
-        await self.session.refresh(data)
+        sa_obj = self.table_model(**data.model_dump())
+        self.session.add(sa_obj)
         if self.is_session_managed:
             await self.session.commit()
             await self.session.close()
