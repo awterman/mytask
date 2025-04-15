@@ -55,7 +55,6 @@ async def test_get_tao_dividends_without_trade(
         netuid=18,
         hotkey=None,
         trade=False,
-        background_tasks=BackgroundTasks(),
         tao_service=mock_tao_service,
     )
 
@@ -104,7 +103,6 @@ async def test_get_tao_dividends_with_trade(
         netuid=18,
         hotkey="5FFApaS75bv5pJHfAp2FVLBj9ZaXuFDjEypsaBNc1wCfe52v",
         trade=True,
-        background_tasks=background_tasks,
         tao_service=mock_tao_service,
     )
 

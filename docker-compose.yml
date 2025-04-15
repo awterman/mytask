@@ -8,8 +8,6 @@ services:
     env_file:
       - .env.docker
     command:
-      - "uv"
-      - "run"
       - "uvicorn"
       - "mytask.main:app"
       - "--host"
@@ -44,17 +42,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command:
-      [
-        "uv",
-        "run",
-        "-m",
-        "celery",
-        "-A",
-        "mytask.workers",
-        "worker",
-        "--loglevel=info",
-      ]
+    command: ["celery", "-A", "mytask.workers", "worker", "--loglevel=info"]
     env_file:
       - .env.docker
     volumes:
