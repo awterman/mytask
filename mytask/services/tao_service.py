@@ -200,5 +200,7 @@ class TaoService:
 async def get_tao_service() -> TaoService:
     cache = get_redis_cache()
     tao_service = TaoService(cache)
+    logger.info("Initializing TaoService")
     await tao_service.initialize()
+    logger.info("TaoService initialized")
     return tao_service

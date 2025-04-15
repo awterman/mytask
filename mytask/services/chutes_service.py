@@ -7,6 +7,9 @@ from openai.types.chat.chat_completion_user_message_param import \
 from openai.types.shared_params.response_format_json_object import \
     ResponseFormatJSONObject
 
+from mytask.common.logger import get_logger
+
+logger = get_logger()
 
 class ChutesService:
     """
@@ -20,25 +23,24 @@ class ChutesService:
         self.llm = AsyncOpenAI(api_key=api_key, base_url=base_url)
 
     async def score_tweet_sentiment(
-        self, tweets: List[str], model: str = "unsloth/Llama-3.2-3B-Instruct"
+        self, tweets: List[str], model: str = "deepseek-ai/DeepSeek-V3-0324"
     ) -> int:
         """
         Analyze the sentiment of tweets using Chutes AI with LLaMA.
 
         Args:
             tweets: List of tweet texts to analyze
-            model: The LLM model to use (default: "unsloth/Llama-3.2-3B-Instruct")
+            model: The LLM model to use
 
         Returns:
             int: The sentiment score for the tweets
         """
-        # model = "openrouter/google/gemini-2.0-flash-001"
         # Create a context with tweets for the prompt
         tweet_context = "\n\n".join([f"Tweet: {tweet}" for tweet in tweets])
 
         # Create the prompt for sentiment analysis
         prompt = f"""
-        Analyze the sentiment of the tweets below and provide a score from -100 to +100.
+        Analyze the sentiment of the tweets below and provide a single OVERALL score from -100 to +100.
         -100 represents extremely negative sentiment
         0 represents neutral sentiment
         +100 represents extremely positive sentiment
@@ -46,8 +48,8 @@ class ChutesService:
         Tweets:
         {tweet_context}
 
-        Output in JSON format:
-        [-1, 0, 1]
+        Output the score in JSON format
+        {{"score": 0}}
         
         """
 
@@ -60,17 +62,22 @@ class ChutesService:
                 ),
             ],
             temperature=0.0,
+            response_format=ResponseFormatJSONObject(
+                type="json_object",
+            ),
         )
 
         output = response.choices[0].message.content
         assert output is not None
 
-        # Parse the output, find the block starting with '[' and ending with ']'
-        start = output.find("[")
-        end = output.rfind("]") + 1
+        logger.info(f"Chutes output: {output}")
+
+        # Parse the output, find the block starting with '{' and ending with '}'
+        start = output.find("{")
+        end = output.rfind("}") + 1
         json_output = output[start:end]
-        scores = json.loads(json_output)
-        return int(sum(scores) / len(scores))
+        score = json.loads(json_output)["score"]
+        return score
 
 
 if __name__ == "__main__":

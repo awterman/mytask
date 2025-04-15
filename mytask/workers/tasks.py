@@ -75,7 +75,7 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
             end_date=end_date,
             min_likes=1,
             min_retweets=1,
-            count=20,
+            count=3,
         )
 
         # If no tweets found, return early
@@ -86,6 +86,9 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
                 "netuid": netuid_to_use,
                 "hotkey": hotkey_to_use,
             }
+        if len(tweets) > 3:
+            logger.warning(f"Found {len(tweets)} tweets for analysis, truncating to 3")
+            tweets = tweets[:3]
 
         logger.info(f"Found {len(tweets)} tweets for analysis")
 
@@ -97,6 +100,13 @@ def analyze_sentiment_and_stake(netuid: int, hotkey: str):
 
         # Step 3: Stake or unstake based on sentiment
         stake_amount = abs(sentiment_score) * 0.01  # 0.01 tao * sentiment score
+        if stake_amount == 0:
+            logger.warning("No stake amount, skipping transaction")
+            return {
+                "status": "no_stake_amount",
+                "netuid": netuid_to_use,
+                "hotkey": hotkey_to_use,
+            }
 
         if sentiment_score > 0:
             # Positive sentiment: stake
