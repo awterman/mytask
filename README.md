@@ -38,40 +38,6 @@ https://github.com/user-attachments/assets/accbe530-409a-4760-9b3d-0f02120ad2b8
         return f"netuid:{netuid},hotkey:{hotkey}"
     ```
 
-## Demonstration
-
-Datura API is not working well currently, so I may have to finish the recording later. Here are some logs and screenshots.
-
-```
-2025-04-15 06:37:49,890 - INFO - Request 56d338ac-0838-4479-8bc2-76cc63dfaa75 started: GET /api/v1/tao_dividends?trade=true&netuid=1
-2025-04-15 06:37:49,890 - INFO - Getting TAO dividends for 1 and None
-2025-04-15 06:37:49,890 - INFO - Getting cached dividends for 1 and None
-2025-04-15 06:37:49,891 - INFO - Cache key: netuid:1
-2025-04-15 06:37:49,892 - INFO - Request 56d338ac-0838-4479-8bc2-76cc63dfaa75 completed: GET /api/v1/tao_dividends - Status: 200 - Took: 0.0016s
-2025-04-15 06:37:49,892 - INFO - Starting analyze_sentiment_and_stake task for netuid=1, hotkey=5FFApaS75bv5pJHfAp2FVLBj9ZaXuFDjEypsaBNc1wCfe52v
-2025-04-15 06:37:49,893 - INFO - Initializing services
-2025-04-15 06:37:49,909 - INFO - Searching tweets from 2025-04-08 to 2025-04-15 for subnet 1
-2025-04-15 06:37:50,598 - ERROR - Error in analyze_sentiment_and_stake task: Datura API error: 500 - {"detail":"Server error '500 Internal Server Error' for url 'https://api.smartscrape.ai/twitter/search'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"}
-Traceback (most recent call last):
-  File "/home/z/code/mytask/mytask/workers/tasks.py", line 119, in analyze_sentiment_and_stake
-    result = run_async(_run())
-             ^^^^^^^^^^^^^^^^^
-  File "/home/z/code/mytask/mytask/workers/tasks.py", line 27, in run_async
-    return loop.run_until_complete(coro)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/z/.pyenv/versions/3.12.7/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-  File "/home/z/code/mytask/mytask/workers/tasks.py", line 66, in _run
-    tweets = await datura_service.search_twitter(
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/z/code/mytask/mytask/services/datura_service.py", line 103, in search_twitter
-    raise Exception(f"Datura API error: {response.status} - {error_text}")
-Exception: Datura API error: 500 - {"detail":"Server error '500 Internal Server Error' for url 'https://api.smartscrape.ai/twitter/search'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"}
-```
-
-![database overview](docs/database.png)
-
 ## Final Words
 
 Actually I exceeded the time limit. Except for the Bittensor part. The timeline (9 hours) seems to be just OK to me to finish the project and make it running well.
