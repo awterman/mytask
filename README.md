@@ -1,5 +1,10 @@
 # MyTask Explanations
 
+## Demo
+
+<video src="docs/demo.mp4" controls="controls" style="max-width: 730px;">
+</video>
+
 ## Time Cost
 
 - I have no knowledge of blockchain development, so I spent a lot of time to understand things like wallet, network, hotkey, etc. and to resolve issues like using "test" as the network and registering before stake/unstake.
