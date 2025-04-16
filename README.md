@@ -2,7 +2,9 @@
 
 ## Demo
 
-<video src="docs/demo.mp4" controls="controls" style="max-width: 730px;">
+<video controls>
+  <source src="docs/demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
 </video>
 
 ## Time Cost
