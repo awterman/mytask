@@ -98,22 +98,20 @@ class TaoService:
             dividends = await self.get_dividends(netuid, hotkey)
             logger.info(f"Got {len(dividends)} dividends for {netuid} and {hotkey}")
 
-            async def _create_dividends(dividends: list[Dividend]):
-                tao_table = TaoDividendTable()
-                logger.info(f"Creating {len(dividends)} dividends in table")
-                try:
-                    for dividend in dividends:
-                        await tao_table.create(
-                            TaoDividendDAO(
-                                netuid=dividend.netuid,
-                                hotkey=dividend.hotkey,
-                                dividend=dividend.dividends,
-                            )
+            tao_table = TaoDividendTable()
+            logger.info(f"Creating {len(dividends)} dividends in table")
+            try:
+                for dividend in dividends:
+                    await tao_table.create(
+                        TaoDividendDAO(
+                            netuid=dividend.netuid,
+                            hotkey=dividend.hotkey,
+                            dividend=dividend.dividends,
                         )
-                except Exception as e:
-                    logger.error(f"Error creating dividends: {e}")
+                    )
+            except Exception as e:
+                logger.error(f"Error creating dividends: {e}")
 
-            asyncio.create_task(_create_dividends(dividends))
             return dividends
 
         dividends = await _inner()
